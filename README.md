@@ -1,6 +1,6 @@
 # CustomRSS
 
-插件介绍：插件介绍：首发Typecho生成rss.xml的RSS订阅,显示有分类、标签、作者信息、描述自定义获取字符等，解决一些聚合平台无法读取Typecho的Feed。
+插件介绍：首发Typecho生成rss.xml的RSS订阅,显示有分类、标签、作者信息、描述自定义获取字符等，解决一些聚合平台无法读取Typecho的Feed。
 
 插件发布页：https://bluehe.cn/archives/rss-typecho
 
