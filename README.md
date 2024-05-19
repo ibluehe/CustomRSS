@@ -4,7 +4,7 @@
 
 插件发布页：https://bluehe.cn/archives/rss-typecho
 
-作者:蓝河
+作者：蓝河
 
 作者网站：https://bluehe.cn/ 
 
