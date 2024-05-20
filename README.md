@@ -12,12 +12,12 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 ## 效果预览
 
-- 积薪成功收录：
+### 积薪成功收录：
 
 ![积薪](https://github.com/ibluehe/CustomRSS/assets/170248713/684d6a04-ddd2-468d-ad72-6a4a339dfde9)
 
 
-- Agr Reader订阅:
+### Agr Reader订阅:
 
 <div style="display: flex; justify-content: space-between;">
   <img src="https://github.com/ibluehe/CustomRSS/assets/170248713/16947820-e31e-44d5-8a54-14fb20ba846f" alt="图片1" style="width: 45%;">
