@@ -10,7 +10,6 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * @version 1.0.0
  * @link https://bluehe.cn/
  * @license   GPL-3.0-or-later
- * @description A brief description of your plugin.
  */
 class CustomRSS_Plugin implements Typecho_Plugin_Interface
 {
