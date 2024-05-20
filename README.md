@@ -1,6 +1,6 @@
 ## CustomRSS for Typecho
 
-CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标签、正确显示作者信息、获取自定义字段的文章描述、获取自定义字段的文章头图 URL等，解决一些聚合平台无法读取Typecho的Feed问题。例如：积薪。
+CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标签、正确显示作者信息、获取自定义字段的文章描述、获取自定义字段的文章头图 URL等。同时解决一些聚合平台无法读取Typecho的Feed问题，例如：积薪。
 
 插件发布页：https://bluehe.cn/archives/rss-typecho
 
