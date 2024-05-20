@@ -41,8 +41,7 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 如果本插件帮到了你，不妨给点赞赏鼓励一下作者 ^-^
 
-<img width="150" height="150" src="https://raw.githubusercontent.com/holmesian/Typecho-AMP/dev/alipay.jpg">
-<img width="150" height="150" src="https://raw.githubusercontent.com/holmesian/Typecho-AMP/dev/wechat.jpg">
+
 
 ## 更新记录
 
