@@ -12,6 +12,18 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 ## 效果预览
 
+积薪成功收录：
+
+![积薪](https://github.com/ibluehe/CustomRSS/assets/170248713/684d6a04-ddd2-468d-ad72-6a4a339dfde9)
+
+
+Agr Reader订阅:
+
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/ibluehe/CustomRSS/assets/170248713/16947820-e31e-44d5-8a54-14fb20ba846f" alt="图片1" style="width: 45%;">
+  <img src="https://github.com/ibluehe/CustomRSS/assets/170248713/81c56cfb-dd79-4a78-aab2-d2ac93ee3b13" alt="图片2" style="width: 45%;">
+</div>
+
 
 
 ## 使用方法
@@ -41,7 +53,15 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 如果本插件帮到了你，不妨给点赞赏鼓励一下作者 ^-^
 
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/ibluehe/CustomRSS/assets/170248713/20a886a8-13a5-4469-a664-9157d6e21cfb" alt="图片1" style="width: 45%;">
+  <img src="https://github.com/ibluehe/CustomRSS/assets/170248713/9a722d82-b745-4d60-821b-9fd273fa605e" alt="图片2" style="width: 45%;">
+</div>
 
+
+
+<img width="150" height="150" src="https://github.com/ibluehe/CustomRSS/assets/170248713/20a886a8-13a5-4469-a664-9157d6e21cfb">
+<img width="150" height="150" src="https://github.com/ibluehe/CustomRSS/assets/170248713/9a722d82-b745-4d60-821b-9fd273fa605e">
 
 ## 更新记录
 
