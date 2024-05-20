@@ -12,6 +12,10 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 ## 效果预览
 
+### 符合Feed Validation Service标准：
+
+![feed](https://github.com/ibluehe/CustomRSS/assets/170248713/64b4914d-d112-44aa-88eb-b81675e6ca57)
+
 ### 积薪成功收录：
 
 ![积薪](https://github.com/ibluehe/CustomRSS/assets/170248713/684d6a04-ddd2-468d-ad72-6a4a339dfde9)
