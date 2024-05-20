@@ -31,6 +31,4 @@
 
 # 授权协议
 
-采用知识共享CC BY-NC-ND 4.0 DEED协议进行许可。仅供学习参考，作者保留所有权利。 
-
-授权介绍: https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans
+GPL-3.0-or-later
