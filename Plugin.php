@@ -8,6 +8,9 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 
  * @package CustomRSS 
  * @version 1.0.0
+ * @author 蓝河
+ * @link https://bluehe.cn/
+ * @license GPL-3.0-or-later
  */
 class CustomRSS_Plugin implements Typecho_Plugin_Interface
 {
