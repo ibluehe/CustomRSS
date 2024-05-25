@@ -2,7 +2,6 @@
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 
 /**
- * CustomRSS Plugin for Typecho
  * 
  * 生成站点的 rss.xml 文件，用于 rss 订阅优化。
  * 
