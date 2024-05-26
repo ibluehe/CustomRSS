@@ -4,7 +4,8 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 /**
  * 
  * 生成站点的 rss.xml 文件，用于 rss 订阅优化。
- * 
+ * 设置教程请访问：<a style="font-weight:bold;" href="https://bluehe.cn/archives/rss-typecho">跳转地址</a>)
+ *
  * @package CustomRSS 
  * @version 1.0.0
  * @author 蓝河
