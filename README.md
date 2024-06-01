@@ -57,11 +57,6 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 如果本插件帮到了你，不妨赞赏鼓励一下作者 ^-^
 
-<div style="display: flex; justify-content: space-between;">
-  <img src="https://github.com/ibluehe/CustomRSS/assets/170248713/20a886a8-13a5-4469-a664-9157d6e21cfb" alt="图片1" style="width: 45%;">
-  <img src="https://github.com/ibluehe/CustomRSS/assets/170248713/9a722d82-b745-4d60-821b-9fd273fa605e" alt="图片2" style="width: 45%;">
-</div>
-
 
 ## 更新记录
 
