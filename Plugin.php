@@ -45,7 +45,10 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             ->order('created', Typecho_Db::SORT_DESC)
             ->limit($numOfPosts));
 
-        require_once 'Parsedown.php';
+        // 避免与其他依赖Parsedown的插件共同引入而导致类冲突
+        if (!class_exists('Parsedown')) {
+            require_once 'Parsedown.php';
+        }
         $Parsedown = new Parsedown();
 
         $rssFeed = '<?xml version="1.0" encoding="UTF-8" ?>' . PHP_EOL;
