@@ -46,6 +46,9 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             ->limit($numOfPosts));
 
         require_once 'Parsedown.php';
+        if (!class_exists('Parsedown')) {
+            require_once 'Parsedown.php';
+        }
         $Parsedown = new Parsedown();
 
         $rssFeed = '<?xml version="1.0" encoding="UTF-8" ?>' . PHP_EOL;
