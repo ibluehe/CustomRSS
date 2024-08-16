@@ -46,7 +46,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             ->limit($numOfPosts));
         
         if (!class_exists('Parsedown')) {
-        require_once'Parsedown.php';
+            require_once'Parsedown.php';
         }
 
         $Parsedown = new Parsedown();
