@@ -4,7 +4,7 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 插件发布页：https://bluehe.cn/archives/rss-typecho
 
-作者：蓝河
+作者：寻鹤
 
 作者网站：https://bluehe.cn/ 
 
