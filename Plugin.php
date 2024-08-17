@@ -6,7 +6,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 生成站点的 rss.xml 文件，用于 rss 订阅优化。
  *
  * @package CustomRSS 
- * @version 1.0.0
+ * @version 1.0.2
  * @author 寻鹤
  * @link https://bluehe.cn/
  * @license GPL-3.0-or-later
