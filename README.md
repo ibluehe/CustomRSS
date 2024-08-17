@@ -8,7 +8,7 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 
 作者网站：https://bluehe.cn/ 
 
-最新版本: 1.0.1
+最新版本: 1.0.2
 
 ## 效果预览
 
@@ -64,6 +64,8 @@ CustomRSS是Typecho首发生成rss.xml的RSS订阅插件，显示有分类、标
 Version 1.0.0 (2024.05.19) 发布插件
 
 Version 1.0.1 (2024.05.20) 新增获取自定义字段的文章描述、获取自定义字段的文章头图 URL、正确显示作者信息，去除固定作者信息，添加 lastBuildDate 标签：使用 date(DATE_RSS) 来生成当前时间并添加到 RSS 文件中，以满足 slash:comments 标签的要求。
+
+Version 1.0.2 (2024.08.17) 确保仅当 Parsedown 类不存在时才会加载 Parsedown.php 文件，这样就可以避免不必要的重复检查和加载，同时也能防止类冲突的问题。这个方式更简洁且功能完备。
 
 ## 开源许可协议
 
