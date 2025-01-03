@@ -6,7 +6,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 生成站点的 rss.xml 文件，用于 rss 订阅优化。
  *
  * @package CustomRSS 
- * @version 1.0.2
+ * @version 1.0.3
  * @author 寻鹤
  * @link https://bluehe.cn/
  * @license GPL-3.0-or-later
@@ -44,13 +44,9 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             ->where('status = ?', 'publish')
             ->order('created', Typecho_Db::SORT_DESC)
             ->limit($numOfPosts));
-        
-        if (!class_exists('Parsedown')) {
-            require_once'Parsedown.php';
-        }
 
+        require_once 'Parsedown.php';
         $Parsedown = new Parsedown();
-
 
         $rssFeed = '<?xml version="1.0" encoding="UTF-8" ?>' . PHP_EOL;
         $rssFeed .= '<rss version="2.0"' . PHP_EOL;
@@ -66,7 +62,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         $rssFeed .= '<lastBuildDate>' . date(DATE_RSS) . '</lastBuildDate>' . PHP_EOL;
 
         foreach ($rows as $row) {
-            $permalink = Typecho_Router::url('post', $row, $options->index);
+            $permalink = Typecho_Router::url('post', $row, $options->siteUrl);
 
             $author = $db->fetchRow($db->select('screenName')
                 ->from('table.users')
@@ -84,7 +80,6 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
                 ->join('table.relationships', 'table.metas.mid = table.relationships.mid')
                 ->where('table.relationships.cid = ?', $row['cid'])
                 ->where('table.metas.type = ?', 'category'));
-
             if (!empty($categories)) {
                 foreach ($categories as $category) {
                     $rssFeed .= '<category><![CDATA[' . $category['name'] . ']]></category>' . PHP_EOL;
@@ -96,7 +91,6 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
                 ->join('table.relationships', 'table.metas.mid = table.relationships.mid')
                 ->where('table.relationships.cid = ?', $row['cid'])
                 ->where('table.metas.type = ?', 'tag'));
-
             if (!empty($tags)) {
                 foreach ($tags as $tag) {
                     $rssFeed .= '<category><![CDATA[' . $tag['name'] . ']]></category>' . PHP_EOL;
@@ -107,7 +101,6 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
                 ->from('table.fields')
                 ->where('cid = ?', $row['cid'])
                 ->where('name = ?', 'postjj'));
-
             if (!empty($customDesc['str_value'])) {
                 $rssFeed .= '<description><![CDATA[' . htmlspecialchars($customDesc['str_value']) . ']]></description>' . PHP_EOL;
             } else {
@@ -119,6 +112,8 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             }
 
             if (!empty($row['text'])) {
+                // 处理 Markdown 内容，去除 <!--markdown--> 注释，确保解析
+                $row['text'] = preg_replace('/<!--markdown-->/i', '', $row['text']);
                 $htmlContent = $Parsedown->text($row['text']);
                 $rssFeed .= '<content:encoded><![CDATA[' . PHP_EOL . $htmlContent . PHP_EOL . ']]></content:encoded>' . PHP_EOL;
             }
@@ -136,7 +131,6 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
                 ->from('table.fields')
                 ->where('cid = ?', $row['cid'])
                 ->where('name = ?', 'banner'));
-
             if (!empty($banner['str_value'])) {
                 $rssFeed .= '<enclosure url="' . htmlspecialchars($banner['str_value']) . '" length="0" type="image/jpeg" />' . PHP_EOL;
             }
