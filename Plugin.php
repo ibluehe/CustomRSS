@@ -62,6 +62,11 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         $rssFeed .= '<lastBuildDate>' . date(DATE_RSS) . '</lastBuildDate>' . PHP_EOL;
 
         foreach ($rows as $row) {
+            // 跳过有密码保护的文章
+            if (!empty($row['password'])) {
+                continue;
+            }
+
             $permalink = Typecho_Router::url('post', $row, $options->siteUrl);
 
             $author = $db->fetchRow($db->select('screenName')
