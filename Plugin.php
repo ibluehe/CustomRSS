@@ -7,7 +7,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  *
  * @package CustomRSS 
  * @version 1.0.3
- * @author 寻鹤
+ * @author 云心
  * @link https://bluehe.cn/
  * @license GPL-3.0-or-later
  */
