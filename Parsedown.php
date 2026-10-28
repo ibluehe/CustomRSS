@@ -17,7 +17,7 @@ class Parsedown
 {
     # ~
 
-    const version = '1.8.0-beta-7';
+    const version = '1.8.0';
 
     # ~
 
@@ -107,6 +107,7 @@ class Parsedown
         'ftp://',
         'ftps://',
         'mailto:',
+        'tel:',
         'data:image/png;base64,',
         'data:image/gif;base64,',
         'data:image/jpeg;base64,',
@@ -555,7 +556,7 @@ class Parsedown
 
         $Block = array(
             'element' => array(
-                'name' => 'h' . min(6, $level),
+                'name' => 'h' . $level,
                 'handler' => array(
                     'function' => 'lineElements',
                     'argument' => $text,
@@ -570,7 +571,7 @@ class Parsedown
     #
     # List
 
-    protected function blockList($Line, array $CurrentBlock = null)
+    protected function blockList($Line, ?array $CurrentBlock = null)
     {
         list($name, $pattern) = $Line['text'][0] <= '-' ? array('ul', '[*+-]') : array('ol', '[0-9]{1,9}+[.\)]');
 
@@ -807,7 +808,7 @@ class Parsedown
     #
     # Setext
 
-    protected function blockSetextHeader($Line, array $Block = null)
+    protected function blockSetextHeader($Line, ?array $Block = null)
     {
         if ( ! isset($Block) or $Block['type'] !== 'Paragraph' or isset($Block['interrupted']))
         {
@@ -893,7 +894,7 @@ class Parsedown
     #
     # Table
 
-    protected function blockTable($Line, array $Block = null)
+    protected function blockTable($Line, ?array $Block = null)
     {
         if ( ! isset($Block) or $Block['type'] !== 'Paragraph' or isset($Block['interrupted']))
         {
@@ -1133,6 +1134,9 @@ class Parsedown
 
     protected function lineElements($text, $nonNestables = array())
     {
+        # standardize line breaks
+        $text = str_replace(array("\r\n", "\r"), "\n", $text);
+
         $Elements = array();
 
         $nonNestables = (empty($nonNestables)
@@ -1490,7 +1494,7 @@ class Parsedown
 
     protected function inlineSpecialCharacter($Excerpt)
     {
-        if ($Excerpt['text'][1] !== ' ' and strpos($Excerpt['text'], ';') !== false
+        if (substr($Excerpt['text'], 1, 1) !== ' ' and strpos($Excerpt['text'], ';') !== false
             and preg_match('/^&(#?+[0-9a-zA-Z]++);/', $Excerpt['text'], $matches)
         ) {
             return array(
@@ -1498,8 +1502,6 @@ class Parsedown
                 'extent' => strlen($matches[0]),
             );
         }
-
-        return;
     }
 
     protected function inlineStrikethrough($Excerpt)
@@ -1847,6 +1849,9 @@ class Parsedown
     # Deprecated Methods
     #
 
+    /**
+     * @deprecated use text() instead
+     */
     function parse($text)
     {
         $markup = $this->text($text);

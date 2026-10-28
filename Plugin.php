@@ -5,9 +5,9 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 生成站点的 rss.xml / atom.xml / feed.json 文件（增强版）
  *
  * @package CustomRSS
- * @version 2.3.0
+ * @version 2.3.2
  * @author 云心怀鹤
- * @link https://bluehe.cn/archives/rss-typecho
+ * @link https://bluehe.cn/
  * @license GPL-3.0-or-later
  *
  * 功能一览：
@@ -455,7 +455,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             'title'       => (string) $options->title,
             'link'        => (string) $options->siteUrl,
             'description' => (string) $options->description,
-            'language'    => 'zh-cn',
+            'language'    => self::feedLanguage($options),
             'lastBuild'   => time(),
         );
 
@@ -640,7 +640,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         $xml .= '<link>' . self::xmlText($channel['link']) . '</link>' . PHP_EOL;
         $xml .= '<description>' . self::xmlText($channel['description']) . '</description>' . PHP_EOL;
         $xml .= '<language>' . self::xmlText($channel['language']) . '</language>' . PHP_EOL;
-        $xml .= '<generator>CustomRSS v2.3.0 (Typecho)</generator>' . PHP_EOL;
+        $xml .= '<generator>CustomRSS v2.3.2 (Typecho)</generator>' . PHP_EOL;
         $xml .= '<atom:link href="' . self::xmlText($channel['selfUrl'])
               . '" rel="self" type="application/rss+xml" />' . PHP_EOL;
         $xml .= '<lastBuildDate>' . date(DATE_RSS, $channel['lastBuild']) . '</lastBuildDate>' . PHP_EOL;
@@ -687,7 +687,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
 
             if (!empty($item['image'])) {
                 $xml .= '<enclosure url="' . self::xmlText($item['image']['url'])
-                      . '" length="0" type="' . self::xmlText($item['image']['type']) . '" />' . PHP_EOL;
+                      . '" length="' . (int) $item['image']['length'] . '" type="' . self::xmlText($item['image']['type']) . '" />' . PHP_EOL;
                 $xml .= '<media:content url="' . self::xmlText($item['image']['url'])
                       . '" medium="image" type="' . self::xmlText($item['image']['type']) . '">' . PHP_EOL;
                 $xml .= '<media:thumbnail url="' . self::xmlText($item['image']['url']) . '" />' . PHP_EOL;
@@ -722,7 +722,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
               . '" rel="self" type="application/atom+xml" />' . PHP_EOL;
         $xml .= '<id>' . self::xmlText($channel['link']) . '</id>' . PHP_EOL;
         $xml .= '<updated>' . date(DATE_ATOM, $channel['lastBuild']) . '</updated>' . PHP_EOL;
-        $xml .= '<generator uri="https://bluehe.cn/">CustomRSS v2.3.0</generator>' . PHP_EOL;
+        $xml .= '<generator uri="https://bluehe.cn/">CustomRSS v2.3.2</generator>' . PHP_EOL;
         if ($cfg['siteLogo'] !== '') {
             $xml .= '<icon>' . self::xmlText($cfg['siteLogo']) . '</icon>' . PHP_EOL;
         }
@@ -1211,35 +1211,35 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
     private static function smartExcerpt($plain, $len)
     {
         $plain = trim($plain);
-        $total = mb_strlen($plain, 'UTF-8');
+        $total = self::strLen($plain);
         if ($total <= $len) {
             return $plain;
         }
 
-        $cut = mb_substr($plain, 0, $len, 'UTF-8');
+        $cut = self::subStr($plain, 0, $len);
         $windowSize = 24;
-        $windowStart = max(0, mb_strlen($cut, 'UTF-8') - $windowSize);
-        $window = mb_substr($cut, $windowStart, null, 'UTF-8');
+        $windowStart = max(0, self::strLen($cut) - $windowSize);
+        $window = self::subStr($cut, $windowStart);
 
         // 句末标点优先
         $puncts = array('。', '！', '？', '!', '?', '…', '；', ';');
         $best = -1;
         foreach ($puncts as $p) {
-            $pos = mb_strrpos($window, $p, 0, 'UTF-8');
+            $pos = self::strRpos($window, $p);
             if ($pos !== false && $pos > $best) {
                 $best = $pos;
             }
         }
 
         if ($best >= 0) {
-            $cut = mb_substr($cut, 0, $windowStart + $best + 1, 'UTF-8');
+            $cut = self::subStr($cut, 0, $windowStart + $best + 1);
             return rtrim($cut);
         }
 
         // 退而求其次：空格（英文场景）
-        $spacePos = mb_strrpos($window, ' ', 0, 'UTF-8');
-        if ($spacePos !== false && $spacePos > (int) (mb_strlen($window, 'UTF-8') * 0.6)) {
-            $cut = mb_substr($cut, 0, $windowStart + $spacePos, 'UTF-8');
+        $spacePos = self::strRpos($window, ' ');
+        if ($spacePos !== false && $spacePos > (int) (self::strLen($window) * 0.6)) {
+            $cut = self::subStr($cut, 0, $windowStart + $spacePos);
             return rtrim($cut) . '...';
         }
 
@@ -1303,10 +1303,10 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             return false;
         }
         foreach ($metas as $meta) {
-            $name = isset($meta['name']) ? mb_strtolower((string) $meta['name'], 'UTF-8') : '';
-            $slug = isset($meta['slug']) ? mb_strtolower((string) $meta['slug'], 'UTF-8') : '';
+            $name = isset($meta['name']) ? self::strToLower((string) $meta['name']) : '';
+            $slug = isset($meta['slug']) ? self::strToLower((string) $meta['slug']) : '';
             foreach ($exclude as $word) {
-                $word = mb_strtolower($word, 'UTF-8');
+                $word = self::strToLower($word);
                 if ($word === '') {
                     continue;
                 }
@@ -1339,10 +1339,51 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             return array();
         }
 
+        $url = self::absolutize($url, $siteUrl);
+
         return array(
-            'url'  => self::absolutize($url, $siteUrl),
-            'type' => self::mimeByExt($url),
+            'url'    => $url,
+            'type'   => self::mimeByExt($url),
+            'length' => self::localFileSize($url, $siteUrl),
         );
+    }
+
+    /**
+     * 读取站内图片的真实字节数，用于 <enclosure length>。
+     * 仅处理指向本站的相对/绝对 URL 映射到本地路径；
+     * 远程图床（外链图片）保持 0，绝不发起任何网络请求。
+     */
+    private static function localFileSize($url, $siteUrl)
+    {
+        // 剥离查询串与锚点
+        $path = self::safeReplace('/[?#].*$/', '', (string) $url);
+        $path = rawurldecode($path);
+
+        $base = str_replace('\\', '/', rtrim((string) $siteUrl, '/'));
+        if (stripos($path, 'http://') === 0 || stripos($path, 'https://') === 0) {
+            if (stripos($path, $base) !== 0) {
+                return 0; // 远程图床
+            }
+            $path = substr($path, strlen($base));
+        } elseif (strpos($path, '//') === 0) {
+            // 协议相对地址 //domain/... 视为远程，不做域名比对（避免误判）
+            return 0;
+        }
+
+        $path = '/' . ltrim($path, '/');
+
+        // 防目录穿越：任何包含 .. 的路径直接放弃
+        if (strpos($path, '..') !== false) {
+            return 0;
+        }
+
+        $file = str_replace('\\', '/', __TYPECHO_ROOT_DIR__) . $path;
+        if (!is_file($file)) {
+            return 0;
+        }
+
+        $size = @filesize($file);
+        return ($size === false || $size <= 0) ? 0 : (int) $size;
     }
 
     /**
@@ -1529,6 +1570,71 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         return ($result === null) ? $subject : $result;
     }
 
+    /* ------------------------------------------------------------------ *
+     * UTF-8 字符串工具
+     *
+     * 全部优先使用 mbstring；服务器未安装 mbstring 扩展时自动降级为
+     * 基于 preg_split 的字符级实现，保证偏移量体系（字符数）始终一致，
+     * 不会出现「字符偏移 / 字节偏移混用」导致的摘要错乱或 fatal error。
+     * ------------------------------------------------------------------ */
+
+    /** 字符数 */
+    private static function strLen($s)
+    {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($s, 'UTF-8');
+        }
+        return preg_match_all('/./us', $s, $m);
+    }
+
+    /** 按字符截取，$length 为 null 表示取到末尾 */
+    private static function subStr($s, $start, $length = null)
+    {
+        if (function_exists('mb_substr')) {
+            if ($length === null) {
+                return mb_substr($s, $start, null, 'UTF-8');
+            }
+            return mb_substr($s, $start, $length, 'UTF-8');
+        }
+
+        $chars = preg_split('//u', $s, -1, PREG_SPLIT_NO_EMPTY);
+        if (!is_array($chars)) {
+            return '';
+        }
+        if ($length === null) {
+            return implode('', array_slice($chars, $start));
+        }
+        return implode('', array_slice($chars, $start, $length));
+    }
+
+    /** 反向查找单字符，返回字符偏移（与 subStr 同一坐标系），未找到返回 false */
+    private static function strRpos($haystack, $needle)
+    {
+        if (function_exists('mb_strrpos')) {
+            return mb_strrpos($haystack, $needle, 0, 'UTF-8');
+        }
+
+        $chars = preg_split('//u', $haystack, -1, PREG_SPLIT_NO_EMPTY);
+        if (!is_array($chars)) {
+            return false;
+        }
+        for ($i = count($chars) - 1; $i >= 0; $i--) {
+            if ($chars[$i] === $needle) {
+                return $i;
+            }
+        }
+        return false;
+    }
+
+    /** 转小写（仅影响 ASCII，中文不受影响） */
+    private static function strToLower($s)
+    {
+        if (function_exists('mb_strtolower')) {
+            return mb_strtolower($s, 'UTF-8');
+        }
+        return strtolower($s);
+    }
+
     /**
      * 相对路径补全为绝对 URL（enclosure / media 必须是绝对地址）
      */
@@ -1562,6 +1668,31 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             'bmp'  => 'image/bmp',
         );
         return isset($map[$ext]) ? $map[$ext] : 'image/jpeg';
+    }
+
+    /**
+     * 频道语言标签。
+     *
+     * RSS 2.0 / Atom 使用的语言标签遵循 RFC 5646（如 zh-CN、en-US：
+     * 语言码小写、子标签大写）。Typecho 后台的语言设置存的是
+     * zh_CN 这类下划线格式，这里读取并规范化；读取不到时默认 zh-CN。
+     */
+    private static function feedLanguage($options)
+    {
+        $lang = '';
+        if (isset($options->lang)) {
+            $lang = trim((string) $options->lang);
+        }
+        if ($lang === '') {
+            $lang = 'zh-CN';
+        }
+
+        $lang = str_replace('_', '-', $lang);
+        $parts = explode('-', $lang);
+        if (count($parts) >= 2) {
+            return strtolower($parts[0]) . '-' . strtoupper($parts[1]);
+        }
+        return strtolower($parts[0]);
     }
 
     private static function writeFile($file, $content)
