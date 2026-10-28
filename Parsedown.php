@@ -107,7 +107,6 @@ class Parsedown
         'ftp://',
         'ftps://',
         'mailto:',
-        'tel:',
         'data:image/png;base64,',
         'data:image/gif;base64,',
         'data:image/jpeg;base64,',
@@ -556,7 +555,7 @@ class Parsedown
 
         $Block = array(
             'element' => array(
-                'name' => 'h' . $level,
+                'name' => 'h' . min(6, $level),
                 'handler' => array(
                     'function' => 'lineElements',
                     'argument' => $text,
@@ -1134,9 +1133,6 @@ class Parsedown
 
     protected function lineElements($text, $nonNestables = array())
     {
-        # standardize line breaks
-        $text = str_replace(array("\r\n", "\r"), "\n", $text);
-
         $Elements = array();
 
         $nonNestables = (empty($nonNestables)
@@ -1494,7 +1490,7 @@ class Parsedown
 
     protected function inlineSpecialCharacter($Excerpt)
     {
-        if (substr($Excerpt['text'], 1, 1) !== ' ' and strpos($Excerpt['text'], ';') !== false
+        if ($Excerpt['text'][1] !== ' ' and strpos($Excerpt['text'], ';') !== false
             and preg_match('/^&(#?+[0-9a-zA-Z]++);/', $Excerpt['text'], $matches)
         ) {
             return array(
