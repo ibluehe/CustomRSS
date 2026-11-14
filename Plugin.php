@@ -5,8 +5,9 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 生成站点的 rss.xml / atom.xml / feed.json 文件（增强版）
  *
  * @package CustomRSS
- * @version 2.3.2
+ * @version 2.3.3
  * @author 云心怀鹤
+ * @link  * @author 云心怀鹤
  * @link https://bluehe.cn/archives/rss-typecho
  * @license GPL-3.0-or-later
  *
@@ -155,9 +156,11 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             null,
             '',
             _t('自定义文章路径（留空 = 自动读取站点设置）'),
-            _t('默认自动读取「设置 → 永久链接 → 自定义文章路径」。<br />
-                若读取失败或想为订阅源单独指定，可在此填写，例如：<br />
+            _t('留空 = 自动跟随站点「设置 → 永久链接 → 个性化定义」，
+                包括 <code>/archives/{slug}</code> 这类自定义路径，无需在此重复填写。<br />
+                确需单独指定时<b>只填路径</b>，且必须含 {slug} 或 {cid}，例如：<br />
                 <code>/archives/{slug}.html</code>　<code>/archives/{slug}/</code>　<code>/archives/{cid}/</code>　<code>/{year}/{month}/{day}/{slug}.html</code><br />
+                <b>不要填完整网址</b>（如 https://example.com/ ），否则会被判为无效并自动忽略，同时写入错误日志。<br />
                 可用参数：{cid} {slug} {category} {directory} {year} {month} {day}')
         );
         $form->addInput($permalink);
@@ -460,7 +463,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         );
 
         if (empty($posts)) {
-            $channel['selfUrl'] = $options->siteUrl . ltrim($cfg['fileName'], '/');
+            $channel['selfUrl'] = rtrim((string) $options->siteUrl, '/') . '/' . ltrim($cfg['fileName'], '/');
             return array('channel' => $channel, 'items' => array());
         }
 
@@ -614,7 +617,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         } elseif (!empty($items)) {
             $channel['lastBuild'] = $items[0]['created'];
         }
-        $channel['selfUrl'] = $options->siteUrl . ltrim($cfg['fileName'], '/');
+        $channel['selfUrl'] = rtrim((string) $options->siteUrl, '/') . '/' . ltrim($cfg['fileName'], '/');
 
         return array('channel' => $channel, 'items' => $items);
     }
@@ -640,7 +643,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         $xml .= '<link>' . self::xmlText($channel['link']) . '</link>' . PHP_EOL;
         $xml .= '<description>' . self::xmlText($channel['description']) . '</description>' . PHP_EOL;
         $xml .= '<language>' . self::xmlText($channel['language']) . '</language>' . PHP_EOL;
-        $xml .= '<generator>CustomRSS v2.3.2 (Typecho)</generator>' . PHP_EOL;
+        $xml .= '<generator>CustomRSS v2.3.3 (Typecho)</generator>' . PHP_EOL;
         $xml .= '<atom:link href="' . self::xmlText($channel['selfUrl'])
               . '" rel="self" type="application/rss+xml" />' . PHP_EOL;
         $xml .= '<lastBuildDate>' . date(DATE_RSS, $channel['lastBuild']) . '</lastBuildDate>' . PHP_EOL;
@@ -722,7 +725,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
               . '" rel="self" type="application/atom+xml" />' . PHP_EOL;
         $xml .= '<id>' . self::xmlText($channel['link']) . '</id>' . PHP_EOL;
         $xml .= '<updated>' . date(DATE_ATOM, $channel['lastBuild']) . '</updated>' . PHP_EOL;
-        $xml .= '<generator uri="https://bluehe.cn/">CustomRSS v2.3.2</generator>' . PHP_EOL;
+        $xml .= '<generator uri="https://bluehe.cn/">CustomRSS v2.3.3</generator>' . PHP_EOL;
         if ($cfg['siteLogo'] !== '') {
             $xml .= '<icon>' . self::xmlText($cfg['siteLogo']) . '</icon>' . PHP_EOL;
         }
@@ -991,19 +994,33 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
 
     private static function buildPermalink(array $row, $options, array $cfg, array $metas)
     {
-        // 1) 取链接模板：后台手填 > 站点永久链接设置 > 默认
-        $template = trim($cfg['permalink']);
-        if ($template === '') {
-            $template = self::sitePostTemplate($options);
+        // 1) 链接模板：只接受「含 {cid} / {slug} 的路径」。
+        //    旧版把 https://bluehe.cn/ 这类完整网址当成路径又拼一次站点根，
+        //    于是所有文章都变成 https://bluehe.cn/https://bluehe.cn/。
+        $manual = trim((string) $cfg['permalink']);
+        list($template, $valid) = self::normalizeTemplate($manual);
+        if (!$valid && $manual !== '') {
+            self::warnInvalidTemplate($manual);
         }
 
-        // 2) 规范化：/archives/[cid:digital]/ → /archives/{cid}/
-        $template = preg_replace('/\[\s*([_a-z0-9-]+)\s*(?::[^\]]+)?\]/i', '{$1}', $template);
-        if ($template === '' || $template[0] !== '/') {
-            $template = '/' . ltrim($template, '/');
+        // 2) 没有有效的手填模板时，优先交给 Typecho 核心按真实路由表生成，
+        //    结果与前台 /feed/ 完全一致（自定义永久链接 / 伪静态都能跟上）。
+        if (!$valid) {
+            $core = self::corePermalink($row, $options, $metas, $cfg);
+            if ($core !== '') {
+                return $core;
+            }
         }
 
-        // 3) 准备替换参数
+        // 3) 核心 API 不可用时，退回读取站点路由表模板
+        if (!$valid) {
+            list($template, $valid) = self::normalizeTemplate(self::sitePostTemplate($options));
+        }
+        if (!$valid) {
+            $template = '/archives/{slug}/';
+        }
+
+        // 4) 准备替换参数
         $created   = (int) $row['created'];
         $slug      = !empty($row['slug']) ? $row['slug'] : (string) $row['cid'];
         $category  = 'default';
@@ -1035,18 +1052,187 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             '{mid}'       => $mid,
         );
 
-        // 4) 替换
+        // 5) 替换
         $path = str_replace(array_keys($map), array_values($map), $template);
 
-        // 5) 兜底：仍有未替换占位符时退回 /archives/{cid}/
-        if (strpos($path, '{') !== false || strpos($path, '[') !== false || trim($path, '/') === '') {
-            $path = '/archives/' . $row['cid'] . '/';
+        // 6) 兜底：仍有未替换占位符 / 空路径 / 域名意外混进路径时，
+        //    退回 slug 形式（slug 为空时前面已回退为 cid）
+        if (strpos($path, '{') !== false || strpos($path, '[') !== false
+            || trim($path, '/') === ''
+            || stripos($path, 'http://') !== false
+            || stripos($path, 'https://') !== false) {
+            $path = '/archives/' . $slug . '/';
         }
 
-        // 6) 前缀（是否带 index.php）
+        // 7) 前缀（是否带 index.php）
         $base = self::buildBase($options, $cfg['linkMode']);
 
         return rtrim($base, '/') . '/' . ltrim($path, '/');
+    }
+
+    /**
+     * 用 Typecho 核心路由反解析生成文章永久链接
+     *
+     * 与前台 /feed/ 走的是同一个 Router::url()，所以「个性化定义 /archives/{slug}」
+     * 这类自定义永久链接、以及是否带 index.php，都会自动跟随站点设置。
+     * 手工拼模板只作为核心不可用时的回退，避免再出现域名被当路径拼接的问题。
+     */
+    private static function corePermalink(array $row, $options, array $metas, array $cfg)
+    {
+        $routerClass = '';
+        if (class_exists('Typecho_Router')) {
+            $routerClass = 'Typecho_Router';
+        } elseif (class_exists('Typecho\\Router')) {
+            $routerClass = 'Typecho\\Router';
+        }
+        if ($routerClass === '' || !method_exists($routerClass, 'url')) {
+            return '';
+        }
+
+        $created = (int) $row['created'];
+        $slug = !empty($row['slug']) ? (string) $row['slug'] : (string) $row['cid'];
+
+        $category = 'default';
+        $directory = 'default';
+        $mid = '0';
+        $slugs = array();
+        foreach ($metas as $meta) {
+            if (isset($meta['type']) && $meta['type'] === 'category') {
+                $slugs[] = !empty($meta['slug']) ? $meta['slug'] : 'default';
+                if ($mid === '0' && isset($meta['mid'])) {
+                    $mid = (string) $meta['mid'];
+                }
+            }
+        }
+        if (!empty($slugs)) {
+            $category = $slugs[0];
+            $directory = implode('/', $slugs);
+        }
+
+        $values = array(
+            'cid'       => (string) $row['cid'],
+            'slug'      => $slug,
+            'category'  => $category,
+            'directory' => $directory,
+            'mid'       => $mid,
+            'year'      => date('Y', $created),
+            'month'     => date('m', $created),
+            'day'       => date('d', $created),
+        );
+
+        // 按路由表实际声明的参数逐个提供；缺一个，核心就会把 {参数名} 原样输出
+        $route = method_exists($routerClass, 'get')
+            ? call_user_func(array($routerClass, 'get'), 'post') : null;
+        $params = $values;
+        if (is_array($route) && !empty($route['params']) && is_array($route['params'])) {
+            $params = array();
+            foreach ($route['params'] as $key) {
+                // 未知参数退回 slug，至少保证不会输出空段 / {参数名}
+                $params[$key] = isset($values[$key]) ? $values[$key] : $slug;
+            }
+        }
+
+        $prefix = '';
+        try {
+            $prefix = (string) $options->index;
+        } catch (Exception $e) {
+            $prefix = '';
+        }
+        if ($prefix === '') {
+            $prefix = rtrim((string) $options->siteUrl, '/') . '/';
+        }
+
+        try {
+            $url = call_user_func(array($routerClass, 'url'), 'post', $params, $prefix);
+        } catch (Exception $e) {
+            return '';
+        } catch (Throwable $e) {
+            return '';
+        }
+
+        if (!is_string($url) || $url === '' || $url === '#' || strpos($url, '{') !== false) {
+            return '';
+        }
+
+        // 核心返回相对地址时统一补齐站点根
+        if (!preg_match('#^https?://#i', $url)) {
+            $url = rtrim((string) $options->siteUrl, '/') . '/' . ltrim($url, '/');
+        }
+
+        // 后台「链接模式」修正（auto = 完全跟随核心）
+        if ($cfg['linkMode'] === 'noindex') {
+            $url = preg_replace('#/index\.php(?=/|$)#i', '', $url);
+        } elseif ($cfg['linkMode'] === 'index' && stripos($url, '/index.php') === false) {
+            $url = preg_replace('#^(https?://[^/]+)(/.*)$#i', '$1/index.php$2', $url, 1);
+        }
+        if (!is_string($url)) {
+            return '';
+        }
+
+        // 最后防线：域名被拼进路径说明结果异常，退回手工模板
+        $urlPath = (string) parse_url($url, PHP_URL_PATH);
+        if (stripos($urlPath, 'http://') !== false || stripos($urlPath, 'https://') !== false) {
+            return '';
+        }
+
+        return $url;
+    }
+
+    /**
+     * 归一化永久链接模板
+     *
+     * 兼容 /archives/[slug:string]/ → /archives/{slug}/
+     *      https://example.com/archives/{slug} → /archives/{slug}（剥掉域名）
+     * 并判断模板是否含能唯一定位文章的占位符。
+     */
+    private static function normalizeTemplate($template)
+    {
+        $template = trim((string) $template);
+        if ($template === '') {
+            return array('', false);
+        }
+
+        // 绝对 / 协议相对地址：只保留 path（+ query），杜绝域名被当路径拼接
+        if (preg_match('#^https?://#i', $template) || strpos($template, '//') === 0) {
+            $absolute = (strpos($template, '//') === 0) ? 'https:' . $template : $template;
+            $parts = parse_url($absolute);
+            if (!is_array($parts)) {
+                $parts = array();
+            }
+            $path = isset($parts['path']) ? $parts['path'] : '/';
+            if (isset($parts['query']) && $parts['query'] !== '') {
+                $path .= '?' . $parts['query'];
+            }
+            $template = $path;
+        }
+
+        // Typecho 路由表写法：[cid:digital] / [slug:string] → {cid} / {slug}
+        $template = preg_replace('/\[\s*([_a-z0-9-]+)\s*(?::[^\]]+)?\]/i', '{$1}', $template);
+        if (!is_string($template)) {
+            $template = '';
+        }
+        if ($template === '' || $template[0] !== '/') {
+            $template = '/' . ltrim($template, '/');
+        }
+
+        // 没有 {cid} / {slug} 会让所有文章指向同一个地址，直接判为无效
+        $valid = (bool) preg_match('/\{(?:cid|slug)\}/i', $template);
+
+        return array($template, $valid);
+    }
+
+    /**
+     * 无效模板只记一次日志，避免每篇文章刷屏
+     */
+    private static function warnInvalidTemplate($value)
+    {
+        static $logged = false;
+        if ($logged) {
+            return;
+        }
+        $logged = true;
+        @error_log('CustomRSS: 已忽略无效的「自定义文章路径」配置 [' . $value
+            . ']，请只填路径且包含 {slug} 或 {cid}，不要带域名');
     }
 
     /**
@@ -1085,21 +1271,53 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
 
     private static function sitePostTemplate($options)
     {
+        $routerClass = '';
         if (class_exists('Typecho_Router')) {
+            $routerClass = 'Typecho_Router';
+        } elseif (class_exists('Typecho\\Router')) {
+            $routerClass = 'Typecho\\Router';
+        }
+
+        if ($routerClass !== '' && method_exists($routerClass, 'get')) {
             try {
-                $router = Typecho_Router::get('post');
-                if (!empty($router['url'])) {
-                    return $router['url'];
+                $router = call_user_func(array($routerClass, 'get'), 'post');
+                if (is_array($router)) {
+                    if (!empty($router['url'])) {
+                        return $router['url'];
+                    }
+                    // 新版 Typecho 的 get() 返回解析后的路由项：只有 format + params，
+                    // 例如 format=/archives/%s、params=['slug'] → 还原成 /archives/{slug}
+                    if (!empty($router['format']) && !empty($router['params'])
+                        && is_array($router['params'])) {
+                        $parts = explode('%s', (string) $router['format']);
+                        $url = '';
+                        foreach (array_values($router['params']) as $i => $key) {
+                            $url .= (isset($parts[$i]) ? $parts[$i] : '') . '{' . $key . '}';
+                        }
+                        $tail = count($router['params']);
+                        $url .= isset($parts[$tail]) ? $parts[$tail] : '';
+                        if ($url !== '') {
+                            return $url;
+                        }
+                    }
                 }
             } catch (Exception $e) {
                 // 走下面的兜底
+            } catch (Throwable $e) {
+                // 同上
             }
         }
 
         try {
             $table = $options->routingTable;
             if (is_string($table)) {
-                $table = @unserialize($table);
+                // Typecho 1.3 起 routingTable 可能以 JSON 存储，旧版是 serialize
+                $raw = $table;
+                $table = @unserialize($raw);
+                if (!is_array($table)) {
+                    $decoded = json_decode($raw, true);
+                    $table = is_array($decoded) ? $decoded : array();
+                }
             }
             if (is_array($table) && isset($table['post']['url'])) {
                 return $table['post']['url'];
@@ -1108,7 +1326,7 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
             // 忽略
         }
 
-        return '/archives/[cid:digital]/';
+        return '/archives/{slug}/';
     }
 
     private static function buildBase($options, $mode)
@@ -1130,6 +1348,10 @@ class CustomRSS_Plugin implements Typecho_Plugin_Interface
         }
 
         if ($index !== '') {
+            // 少数环境返回相对路径（如 /index.php），统一补全站点根
+            if (!preg_match('#^https?://#i', $index)) {
+                $index = $siteUrl . '/' . ltrim($index, '/');
+            }
             if (strpos($index, 'index.php') !== false) {
                 $pos = strpos($index, 'index.php');
                 return rtrim(substr($index, 0, $pos + strlen('index.php')), '/');

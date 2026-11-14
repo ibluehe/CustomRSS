@@ -12,7 +12,7 @@ CustomRSS 是 Typecho 首发生成 `rss.xml` 的 RSS 订阅插件：正确显示
 | 作者 | 云心怀鹤 |
 | 作者网站 | https://bluehe.cn/ |
 | 插件发布页 | https://bluehe.cn/archives/rss-typecho |
-| 最新版本 | 2.3.2 |
+| 最新版本 | 2.3.3 |
 | 开源许可 | GPL-3.0-or-later |
 
 ### 运行环境要求
@@ -100,6 +100,14 @@ CustomRSS 是 Typecho 首发生成 `rss.xml` 的 RSS 订阅插件：正确显示
 
 自动逻辑：读取路由表后把 `[cid:digital]`、`[slug:string]` 统一归一化为 `{cid}`、`{slug}`，
 因此 `/archives/{slug}`、`/archives/{slug}.html`、`/{year}/{month}/{day}/{slug}.html`、`/archives/{cid}/` 全部兼容。
+
+> **v2.3.3 起：首选交给 Typecho 核心生成。** 新版不再自己硬读路由表，而是调用
+> `Router::url('post', $params, $options->index)` 反解析（与前台 `/feed/` 同一套逻辑），
+> 站点「设置 → 永久链接 → 个性化定义」里填 `/archives/{slug}` 时插件自动跟随，
+> **插件设置里的「自定义文章路径」保持留空即可**；`Typecho_Router` 与 `Typecho\Router` 两种类名都兼容。
+> 只有核心 API 不可用时才回退到手工解析，并加三道校验：绝对网址自动剥离域名、
+> 模板必须含 `{slug}` / `{cid}`、最终路径里混入域名即判失败并回退。
+> 这解决了旧版把站点地址当路径拼成 `https://域名/https://域名/`、且所有文章共用一个链接的问题。
 
 ### 3. 永久不变的 GUID（v2.2.0，推荐默认开启）
 GUID 是订阅器判断「这是不是一篇新文章」的唯一依据。旧版直接用文章链接做 GUID，
@@ -220,7 +228,7 @@ Feedly、Inoreader 会用它做缩略图。**相对路径会自动补全为带�
 | 输出格式 | RSS | 可同时勾 Atom、JSON Feed |
 | RSS 文件名 | rss.xml | Atom 固定 atom.xml，JSON 固定 feed.json |
 | 链接模式 | 自动识别 | 404 时改「强制带 index.php」 |
-| 自定义文章路径 | 留空 | 留空 = 跟随站点永久链接设置 |
+| 自定义文章路径 | 留空 | 留空 = 跟随站点「个性化定义」（推荐）；手填只填路径且必须含 `{slug}` / `{cid}`，不要带域名 |
 | 封面图来源 | 智能 | banner 字段 / 正文首图 / 智能兜底 |
 | 站点 Logo 地址 | 空 | 留空不输出 `<image>` |
 | 版权声明 | 空 | 留空自动「© 年份 站点标题」 |
@@ -238,6 +246,19 @@ Feedly、Inoreader 会用它做缩略图。**相对路径会自动补全为带�
 ---
 
 ## 五、常见问题
+
+**Q：RSS 里文章链接变成 `https://bluehe.cn/https://bluehe.cn/`，`<comments>` 也是，所有文章还都指向同一个地址？**
+A：这是 v2.3.2 及更早版本的 bug。旧版自己解析路由表，某些 Typecho 版本下 `Router::get('post')` 返回的是
+解析后的路由项（`format` + `params`），拿不到旧代码期待的 `url` 字段，退化后又把站点地址当成路径拼了一次，
+而且没有校验「模板必须含 `{slug}` / `{cid}`」，于是每篇文章都得到同一个错误链接。
+`<comments>` 是 `$permalink . '#comments'`，所以一起坏。
+v2.3.3 改为优先调用 Typecho 核心 `Router::url()` 生成，与 `/feed/` 完全一致，自动识别 `/archives/{slug}`；
+同时会忽略误填成完整网址的「自定义文章路径」并在 PHP 错误日志里留一条提示。
+升级后按老规矩**先禁用插件再启用**，或删掉站点根目录的 `rss.xml` 刷新前台触发重建。
+
+**Q：我在后台填了「个性化定义 /archives/{slug}」，插件能自己识别吗？**
+A：v2.3.3 起能，而且插件设置里的「自定义文章路径」**保持留空**就是最佳实践。
+若确实要单独指定（例如让订阅源用另一套路径），只填路径 `/archives/{slug}`，不要带域名。
 
 **Q：改了设置后文件没变化？**
 A：缓存未过期。临时把「生成缓存」设为 0，或删掉站点根目录的 `rss.xml` 后刷新前台；也可以直接改一篇文章触发重建。
@@ -266,6 +287,11 @@ A：输出模式选「摘要 + 全文」，`<content:encoded>` 是标准全文�
 
 ## 六、版本记录
 
+- **v2.3.3**（2026.11.14）修复文章链接域名重复（`https://域名/https://域名/`）与所有文章共用一个链接的问题：
+  改为优先调用 Typecho 核心 `Router::url('post', ...)` 反解析，自动跟随「个性化定义 `/archives/{slug}`」；
+  兼容 `Typecho_Router` / `Typecho\Router`；回退链路新增绝对网址剥离、`{slug}`/`{cid}` 占位符校验、
+  域名重复检测与无效配置的单次错误日志；`routingTable` 支持 JSON 存储；`index` 为相对路径时自动补全站点根；
+  `atom:link self` 统一按站点根拼接。
 - **v2.3.2**（2026.10.28）频道 `<language>` 由硬编码 `zh-cn` 改为读取 Typecho 语言设置并按 RFC 5646
   规范化输出（如 `zh-CN`、`en-US`）；`<enclosure length>` 由固定的 `0` 改为读取站内图片真实字节数
   （远程图床仍为 0，绝不发起网络请求），满足 RSS 2.0 规范对 length 的要求，消除严格验证器警告。
